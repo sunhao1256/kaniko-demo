@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kaniko
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    imagePullPolicy: IfNotPresent
+    args: ["--dockerfile=/dockerfile",
+            "--context=dir:///workspace",
+            "--skip-tls-verify",
+            "--destination=harbor.archeros.cn/dev/sun/kaniko-test-nginx:latest"] # replace with your dockerhub account
+    volumeMounts:
+      - name: kaniko-secret
+        mountPath: /kaniko/.docker
+      - name: dockerfile
+        mountPath: /dockerfile
+        subPath: dockerfile
+      - name: dockerfile-storage
+        mountPath: /workspace
+  restartPolicy: Never
+  volumes:
+    - name: dockerfile
+      configMap:
+        name: dockerfile
+    - name: kaniko-secret
+      secret:
+        secretName: harbor-regcred
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+    - name: dockerfile-storage
+      persistentVolumeClaim:
+        claimName: dockerfile-claim
